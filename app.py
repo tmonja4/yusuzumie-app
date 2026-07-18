@@ -15,14 +15,13 @@ db = get_database()
 
 st.set_page_config(page_title="模擬店オーダーシステム", page_icon="🍔", layout="wide")
 
+# メニューリストの更新
 MENU = [
-    "🥤【ドリンク】スムージー", "🍋【ドリンク】レモネード", 
-    "🍡【甘味】みたらし団子", "🍧【甘味】あんみつ", "🍌【甘味】チョコバナナ",
-    "🍗【つまみ】から揚げ", "🍟【つまみ】ポテト", "🌭【つまみ】フランクフルト", 
-    "🫛【つまみ】枝豆", "🥒【つまみ】きゅうり一本漬け"
+    "🍋【ドリンク】ひとつぶレモネード", "🫐【ドリンク】ブルーベリースムージー", "🍵【ドリンク】抹茶ラテ",
+    "🥣【甘味】ぜんざい", "🥖【甘味】チュロス", "🥭【甘味】マンゴープリン", "🍠【甘味】大学いも", "🍡【甘味】五大くずもち",
+    "🍗【つまみ】唐揚げ", "🫛【つまみ】枝豆", "🥔【つまみ】ハッシュドポテト", "🥒【つまみ】カップきゅうり", "🥟【つまみ】カップ餃子"
 ]
 
-# 配達係を削除
 mode = st.sidebar.radio("役割（画面）を選んでください", ["🛒 受付（レジ）", "🍳 調理場（キッチン）"])
 
 # ==========================================
@@ -74,9 +73,7 @@ if mode == "🛒 受付（レジ）":
             if st.button("🚀 注文を送信", type="primary", use_container_width=True):
                 db["order_count"] += 1
                 
-                # 内部管理用の重複しないID
                 uid = db["order_count"]
-                # 画面表示用の1〜20ループ番号
                 display_id = uid % 20
                 if display_id == 0:
                     display_id = 20
@@ -168,7 +165,6 @@ elif mode == "🍳 調理場（キッチン）":
         st.session_state.known_kitchen_state = current_kitchen_state.copy()
         
     for uid, is_rev in current_kitchen_state.items():
-        # 通知表示用に表示IDを取得
         display_id = next((o["display_id"] for o in db["orders"] if o["uid"] == uid), uid)
         if uid not in st.session_state.known_kitchen_state:
             st.toast(f"🔔 新規注文（番号: {display_id}）が入りました！", icon="🔥")
