@@ -105,8 +105,8 @@ if mode == "🛒 受付（レジ）":
         st.write("送信された注文はありません。")
     else:
         for order in db["orders"]:
-            if order["status"] == "提供完了":
-                with st.expander(f"✅ 番号 {order['display_id']} : 提供完了"):
+            if order["status"] == "調理完了":
+                with st.expander(f"✅ 番号 {order['display_id']} : 調理完了"):
                     for item, count in order["items"].items():
                         st.write(f" - {item} : {count}個")
             else:
@@ -176,7 +176,7 @@ elif mode == "🍳 調理場（キッチン）":
     if st.button("🔄 最新の注文を手動で確認する", use_container_width=True):
         st.rerun()
 
-    tab1, tab2 = st.tabs(["🔥 調理待ち", "✅ 提供完了リスト"])
+    tab1, tab2 = st.tabs(["🔥 調理待ち", "✅ 調理完了リスト"])
     
     with tab1:
         active_orders = sorted([o for o in db["orders"] if o["status"] == "調理待ち"], key=lambda x: x["uid"])
@@ -196,18 +196,18 @@ elif mode == "🍳 調理場（キッチン）":
                     for item, count in o["items"].items():
                         st.markdown(f"### 🔸 {item} ： **{count}** 個")
                     
-                    if st.button(f"✅ 提供完了にする", key=f"kitchen_done_{o['uid']}", type="primary", use_container_width=True):
-                        o["status"] = "提供完了"
+                    if st.button(f"✅ 調理完了にする", key=f"kitchen_done_{o['uid']}", type="primary", use_container_width=True):
+                        o["status"] = "調理完了"
                         o["is_revised"] = False 
                         st.rerun()
                 st.write("") 
 
     with tab2:
-        done_orders = [o for o in db["orders"] if o["status"] == "提供完了"]
+        done_orders = [o for o in db["orders"] if o["status"] == "調理完了"]
         if not done_orders:
             st.write("完了した注文はありません。")
         for o in done_orders:
-            st.success(f"✅ 番号: {o['display_id']} (提供完了)")
+            st.success(f"✅ 番号: {o['display_id']} (調理完了)")
             for item, count in o["items"].items():
                 st.write(f" - {item}: {count}個")
             st.divider()
