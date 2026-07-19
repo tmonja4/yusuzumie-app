@@ -194,11 +194,11 @@ elif mode == "🍳 調理場（キッチン）":
             unsafe_allow_html=True
         )
     elif play_rev_sound:
-        # 訂正用（エラーブザー音）
+        # 訂正用（短いエラー音・2〜3回のブザー）に変更
         st.markdown(
             """
             <audio autoplay>
-                <source src="https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3" type="audio/mpeg">
+                <source src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" type="audio/mpeg">
             </audio>
             """,
             unsafe_allow_html=True
