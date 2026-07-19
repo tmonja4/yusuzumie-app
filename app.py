@@ -299,7 +299,3 @@ elif mode == "🍳 調理場（キッチン）":
             else:
                 with col2:
                     st.write(f"{display_name} : **{sales_counts[item]}** 個")
-                
-        st.divider()
-        total_items = sum(sales_counts.values())
-        st.metric(label="現在の総販売アイテム数", value=f"{total_items} 個")
