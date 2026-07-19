@@ -15,12 +15,21 @@ db = get_database()
 
 st.set_page_config(page_title="模擬店オーダーシステム", page_icon="🍔", layout="wide")
 
-# メニューリスト
-MENU = [
-    "🍋【ドリンク】ひとつぶレモネード", "🫐【ドリンク】ブルーベリースムージー", "🍵【ドリンク】抹茶ラテ",
-    "🥣【甘味】ぜんざい", "🥖【甘味】チュロス", "🥭【甘味】マンゴープリン", "🍠【甘味】大学いも", "🍡【甘味】五大くずもち",
-    "🍗【つまみ】唐揚げ", "🫛【つまみ】枝豆", "🥔【つまみ】ハッシュドポテト", "🥒【つまみ】カップきゅうり", "🥟【つまみ】カップ餃子"
-]
+# --- 全体のデザイン調整（上に詰める） ---
+st.markdown("""
+    <style>
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# メニューリスト（カテゴリ別に分割）
+MENU_DRINK = ["🍋【ドリンク】ひとつぶレモネード", "🫐【ドリンク】ブルーベリースムージー", "🍵【ドリンク】抹茶ラテ"]
+MENU_SWEET = ["🥣【甘味】ぜんざい", "🥖【甘味】チュロス", "🥭【甘味】マンゴープリン", "🍠【甘味】大学いも", "🍡【甘味】五大くずもち"]
+MENU_SNACK = ["🍗【つまみ】唐揚げ", "🫛【つまみ】枝豆", "🥔【つまみ】ハッシュドポテト", "🥒【つまみ】カップきゅうり", "🥟【つまみ】カップ餃子"]
+MENU = MENU_DRINK + MENU_SWEET + MENU_SNACK
 
 mode = st.sidebar.radio("役割（画面）を選んでください", ["🛒 受付（レジ）", "🍳 調理場（キッチン）"])
 
@@ -42,119 +51,135 @@ if mode == "🛒 受付（レジ）":
     if "cart" not in st.session_state:
         st.session_state.cart = {}
 
-    st.subheader("1. 注文を入力")
-    cols = st.columns(2)
-    for i, item in enumerate(MENU):
-        with cols[i % 2]:
-            if st.button(item, use_container_width=True):
-                st.session_state.cart[item] = st.session_state.cart.get(item, 0) + 1
+    # スマホのスクロールを減らすため、入力と履歴をタブで分割
+    tab_order, tab_status = st.tabs(["🛒 注文入力", "📋 注文状況・訂正"])
 
-    st.divider()
-    
-    st.subheader("2. カートの確認")
-    cart_items = {k: v for k, v in st.session_state.cart.items() if v > 0}
-    
-    if len(cart_items) > 0:
-        for item, count in cart_items.items():
-            col1, col2, col3 = st.columns([4, 1, 1])
-            with col1:
-                st.markdown(f"#### {item}： **{count}** 個")
-            with col2:
-                if st.button("➖", key=f"minus_{item}"):
-                    st.session_state.cart[item] -= 1
-                    st.rerun()
-            with col3:
-                if st.button("➕", key=f"plus_{item}"):
-                    st.session_state.cart[item] += 1
-                    st.rerun()
-                
-        col_btn1, col_btn2 = st.columns(2)
-        with col_btn1:
-            if st.button("🚀 注文を送信", type="primary", use_container_width=True):
-                db["order_count"] += 1
-                
-                uid = db["order_count"]
-                display_id = uid % 20
-                if display_id == 0:
-                    display_id = 20
-
-                new_order = {
-                    "uid": uid,
-                    "display_id": display_id,
-                    "time": datetime.now().strftime("%H:%M:%S"),
-                    "items": cart_items.copy(),
-                    "status": "調理待ち", 
-                    "is_revised": False,
-                    "revision_count": 0,
-                    "diff_msg": ""
-                }
-                db["orders"].insert(0, new_order)
-                st.session_state.cart = {}
-                st.success(f"【 {new_order['display_id']} 番 】を送信しました！")
-                st.rerun()
-        with col_btn2:
-            if st.button("🗑️ カートを空にする", use_container_width=True):
-                st.session_state.cart = {}
-                st.rerun()
-    else:
-        st.info("商品は選択されていません。")
-
-    st.divider()
-    
-    st.subheader("📝 注文状況・訂正")
-    
-    if st.button("🔄 最新の調理状況を確認する", use_container_width=True):
-        st.rerun()
+    with tab_order:
+        st.subheader("1. 注文を選択")
         
-    if not db["orders"]:
-        st.write("送信された注文はありません。")
-    else:
-        for order in db["orders"]:
-            if order["status"] == "調理完了":
-                with st.expander(f"✅ 番号 {order['display_id']} : 調理完了"):
-                    for item, count in order["items"].items():
-                        st.write(f" - {item} : {count}個")
-            else:
-                with st.expander(f"番号 {order['display_id']} (現在の状態: {order['status']}) を訂正"):
-                    edit_key = f"edit_{order['uid']}"
-                    if edit_key not in st.session_state:
-                        st.session_state[edit_key] = order["items"].copy()
-                    
-                    st.write("▼数量を変更して「訂正を送信」を押してください")
-                    for item in MENU:
-                        current_val = st.session_state[edit_key].get(item, 0)
-                        if current_val > 0 or st.checkbox(f"{item} を追加", key=f"chk_{order['uid']}_{item}"):
-                            c1, c2 = st.columns([3, 1])
-                            with c1:
-                                st.write(item)
-                            with c2:
-                                new_val = st.number_input("個数", min_value=0, value=current_val, key=f"num_{order['uid']}_{item}")
-                                st.session_state[edit_key][item] = new_val
+        # メニューもタブ分けして省スペース化
+        t_drink, t_sweet, t_snack = st.tabs(["🥤 ドリンク", "🍡 甘味", "🍗 つまみ"])
+        
+        with t_drink:
+            for item in MENU_DRINK:
+                if st.button(item, use_container_width=True):
+                    st.session_state.cart[item] = st.session_state.cart.get(item, 0) + 1
+        with t_sweet:
+            for item in MENU_SWEET:
+                if st.button(item, use_container_width=True):
+                    st.session_state.cart[item] = st.session_state.cart.get(item, 0) + 1
+        with t_snack:
+            for item in MENU_SNACK:
+                if st.button(item, use_container_width=True):
+                    st.session_state.cart[item] = st.session_state.cart.get(item, 0) + 1
 
-                    if st.button("🔄 この内容で訂正を送信", key=f"btn_edit_{order['uid']}", type="primary"):
-                        old_items = order["items"].copy()
-                        new_items = {k: v for k, v in st.session_state[edit_key].items() if v > 0}
+        st.divider()
+        
+        st.subheader("2. カートの確認")
+        cart_items = {k: v for k, v in st.session_state.cart.items() if v > 0}
+        
+        if len(cart_items) > 0:
+            for item, count in cart_items.items():
+                col1, col2, col3 = st.columns([5, 2, 2])
+                with col1:
+                    st.markdown(f"**{item}**")
+                    st.markdown(f"数量: **{count}** 個")
+                with col2:
+                    if st.button("➖", key=f"minus_{item}", use_container_width=True):
+                        st.session_state.cart[item] -= 1
+                        st.rerun()
+                with col3:
+                    if st.button("➕", key=f"plus_{item}", use_container_width=True):
+                        st.session_state.cart[item] += 1
+                        st.rerun()
+            
+            st.write("")
+            col_btn1, col_btn2 = st.columns([2, 1])
+            with col_btn1:
+                if st.button("🚀 注文を送信", type="primary", use_container_width=True):
+                    db["order_count"] += 1
+                    
+                    uid = db["order_count"]
+                    display_id = uid % 20
+                    if display_id == 0:
+                        display_id = 20
+
+                    new_order = {
+                        "uid": uid,
+                        "display_id": display_id,
+                        "time": datetime.now().strftime("%H:%M:%S"),
+                        "items": cart_items.copy(),
+                        "status": "調理待ち", 
+                        "is_revised": False,
+                        "revision_count": 0,
+                        "diff_msg": ""
+                    }
+                    db["orders"].insert(0, new_order)
+                    st.session_state.cart = {}
+                    st.success(f"【 {new_order['display_id']} 番 】を送信しました！")
+                    st.rerun()
+            with col_btn2:
+                if st.button("🗑️ 空にする", use_container_width=True):
+                    st.session_state.cart = {}
+                    st.rerun()
+        else:
+            st.info("商品は選択されていません。")
+
+    with tab_status:
+        st.subheader("📝 注文状況・訂正")
+        
+        if st.button("🔄 最新の調理状況を確認する", use_container_width=True):
+            st.rerun()
+            
+        if not db["orders"]:
+            st.write("送信された注文はありません。")
+        else:
+            for order in db["orders"]:
+                if order["status"] == "調理完了":
+                    with st.expander(f"✅ 番号 {order['display_id']} : 調理完了"):
+                        for item, count in order["items"].items():
+                            st.write(f" - {item} : {count}個")
+                else:
+                    with st.expander(f"番号 {order['display_id']} (現在の状態: {order['status']}) を訂正"):
+                        edit_key = f"edit_{order['uid']}"
+                        if edit_key not in st.session_state:
+                            st.session_state[edit_key] = order["items"].copy()
                         
-                        diffs = []
-                        all_keys = set(old_items.keys()) | set(new_items.keys())
-                        for k in all_keys:
-                            old_v = old_items.get(k, 0)
-                            new_v = new_items.get(k, 0)
-                            if old_v != new_v:
-                                if new_v == 0: diffs.append(f"❌ {k} (削除)")
-                                elif old_v == 0: diffs.append(f"➕ {k} (追加: {new_v}個)")
-                                else: diffs.append(f"🔄 {k} ({old_v}個 ➡️ {new_v}個)")
-                        
-                        if diffs:
-                            order["items"] = new_items
-                            order["is_revised"] = True
-                            order["revision_count"] = order.get("revision_count", 0) + 1 
-                            order["diff_msg"] = "\n".join(diffs)
-                            order["status"] = "調理待ち" 
-                            st.success("訂正を送信しました！")
-                            st.rerun()
-                        else:
-                            st.warning("変更がありませんでした。")
+                        st.write("▼数量を変更して「訂正を送信」を押してください")
+                        for item in MENU:
+                            current_val = st.session_state[edit_key].get(item, 0)
+                            if current_val > 0 or st.checkbox(f"{item} を追加", key=f"chk_{order['uid']}_{item}"):
+                                c1, c2 = st.columns([3, 1])
+                                with c1:
+                                    st.write(item)
+                                with c2:
+                                    new_val = st.number_input("個数", min_value=0, value=current_val, key=f"num_{order['uid']}_{item}")
+                                    st.session_state[edit_key][item] = new_val
+
+                        if st.button("🔄 この内容で訂正を送信", key=f"btn_edit_{order['uid']}", type="primary"):
+                            old_items = order["items"].copy()
+                            new_items = {k: v for k, v in st.session_state[edit_key].items() if v > 0}
+                            
+                            diffs = []
+                            all_keys = set(old_items.keys()) | set(new_items.keys())
+                            for k in all_keys:
+                                old_v = old_items.get(k, 0)
+                                new_v = new_items.get(k, 0)
+                                if old_v != new_v:
+                                    if new_v == 0: diffs.append(f"❌ {k} (削除)")
+                                    elif old_v == 0: diffs.append(f"➕ {k} (追加: {new_v}個)")
+                                    else: diffs.append(f"🔄 {k} ({old_v}個 ➡️ {new_v}個)")
+                            
+                            if diffs:
+                                order["items"] = new_items
+                                order["is_revised"] = True
+                                order["revision_count"] = order.get("revision_count", 0) + 1 
+                                order["diff_msg"] = "\n".join(diffs)
+                                order["status"] = "調理待ち" 
+                                st.success("訂正を送信しました！")
+                                st.rerun()
+                            else:
+                                st.warning("変更がありませんでした。")
 
 # ==========================================
 # 🍳 調理場（キッチン）画面
@@ -186,9 +211,8 @@ elif mode == "🍳 調理場（キッチン）":
             
     st.session_state.known_kitchen_state = current_kitchen_state.copy()
 
-    # --- 通知音を鳴らす処理（音源の使い分け） ---
+    # --- 通知音を鳴らす処理 ---
     if play_new_sound:
-        # 新規注文用（短いビープ音へ変更）
         st.markdown(
             """
             <audio autoplay>
@@ -198,7 +222,6 @@ elif mode == "🍳 調理場（キッチン）":
             unsafe_allow_html=True
         )
     elif play_rev_sound:
-        # 訂正用（チャイム音へ変更）
         st.markdown(
             """
             <audio autoplay>
@@ -236,6 +259,9 @@ elif mode == "🍳 調理場（キッチン）":
                         o["is_revised"] = False 
                         st.rerun()
                 st.write("") 
+                
+        # --- 下側の見やすさを確保するための余白 ---
+        st.markdown("<br><br><br><br><br><br>", unsafe_allow_html=True)
 
     with tab2:
         done_orders = [o for o in db["orders"] if o["status"] == "調理完了"]
