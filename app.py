@@ -25,9 +25,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# メニューリスト（カテゴリ別に分割）
+# メニューリスト
 MENU_DRINK = ["🍋【ドリンク】ひとつぶレモネード", "🫐【ドリンク】ブルーベリースムージー", "🍵【ドリンク】抹茶ラテ"]
-MENU_SWEET = ["🥣【甘味】ぜんざい", "🥖【甘味】チュロス", "🥭【甘味】マンゴープリン", "🍠【甘味】大学いも", "🍡【甘味】五大くずもち"]
+MENU_SWEET = ["🥣【甘味】ぜんざい", "🥭【甘味】マンゴープリン", "🍠【甘味】大学いも", "🍡【甘味】五大くずもち"]
 MENU_SNACK = ["🍗【つまみ】唐揚げ", "🫛【つまみ】枝豆", "🥔【つまみ】ハッシュドポテト", "🥒【つまみ】カップきゅうり", "🥟【つまみ】カップ餃子"]
 MENU = MENU_DRINK + MENU_SWEET + MENU_SNACK
 
@@ -231,10 +231,10 @@ elif mode == "🍳 調理場（キッチン）":
             unsafe_allow_html=True
         )
 
-    if st.button("🔄 最新の注文を手動で確認する", use_container_width=True):
+    if st.button("🔄 最新の状況を手動で確認する", use_container_width=True):
         st.rerun()
 
-    tab1, tab2 = st.tabs(["🔥 調理待ち", "✅ 調理完了リスト"])
+    tab1, tab2, tab3 = st.tabs(["🔥 調理待ち", "✅ 調理完了リスト", "📊 売上集計"])
     
     with tab1:
         active_orders = sorted([o for o in db["orders"] if o["status"] == "調理待ち"], key=lambda x: x["uid"])
@@ -260,7 +260,6 @@ elif mode == "🍳 調理場（キッチン）":
                         st.rerun()
                 st.write("") 
                 
-        # --- 下側の見やすさを確保するための余白 ---
         st.markdown("<br><br><br><br><br><br>", unsafe_allow_html=True)
 
     with tab2:
@@ -272,3 +271,35 @@ elif mode == "🍳 調理場（キッチン）":
             for item, count in o["items"].items():
                 st.write(f" - {item}: {count}個")
             st.divider()
+            
+    with tab3:
+        st.subheader("📊 商品ごとの売上（注文）個数")
+        st.write("※現在システムに記録されている全注文（調理待ち＋調理完了）の合計数です。受付側での訂正内容も自動で反映されます。")
+        
+        # 売上集計ロジック
+        sales_counts = {item: 0 for item in MENU}
+        for o in db["orders"]:
+            for item, count in o["items"].items():
+                if item in sales_counts:
+                    sales_counts[item] += count
+        
+        # カテゴリ分けをせず、全体を2列で一覧表示する
+        col1, col2 = st.columns(2)
+        for i, item in enumerate(MENU):
+            # 表示用に「【ドリンク】」などのカテゴリ表記を削除してスッキリさせる
+            display_name = item
+            if "】" in item:
+                emoji = item.split("【")[0]
+                name = item.split("】")[1]
+                display_name = f"{emoji} {name}"
+                
+            if i % 2 == 0:
+                with col1:
+                    st.write(f"{display_name} : **{sales_counts[item]}** 個")
+            else:
+                with col2:
+                    st.write(f"{display_name} : **{sales_counts[item]}** 個")
+                
+        st.divider()
+        total_items = sum(sales_counts.values())
+        st.metric(label="現在の総販売アイテム数", value=f"{total_items} 個")
