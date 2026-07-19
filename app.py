@@ -85,7 +85,7 @@ if mode == "🛒 受付（レジ）":
                     "items": cart_items.copy(),
                     "status": "調理待ち", 
                     "is_revised": False,
-                    "revision_count": 0, # 何回訂正されたかを記録するカウンターを追加
+                    "revision_count": 0,
                     "diff_msg": ""
                 }
                 db["orders"].insert(0, new_order)
@@ -148,7 +148,7 @@ if mode == "🛒 受付（レジ）":
                         if diffs:
                             order["items"] = new_items
                             order["is_revised"] = True
-                            order["revision_count"] = order.get("revision_count", 0) + 1 # 訂正されるたびにカウントを+1する
+                            order["revision_count"] = order.get("revision_count", 0) + 1 
                             order["diff_msg"] = "\n".join(diffs)
                             order["status"] = "調理待ち" 
                             st.success("訂正を送信しました！")
@@ -165,7 +165,6 @@ elif mode == "🍳 調理場（キッチン）":
     if st_autorefresh:
         st_autorefresh(interval=5000, key="kitchen_refresh")
         
-    # 現在の状況として、各注文の「訂正回数」を監視する
     current_kitchen_state = {o["uid"]: o.get("revision_count", 0) for o in db["orders"] if o["status"] == "調理待ち"}
     
     if "known_kitchen_state" not in st.session_state:
@@ -177,36 +176,33 @@ elif mode == "🍳 調理場（キッチン）":
     for uid, current_rev_count in current_kitchen_state.items():
         display_id = next((o["display_id"] for o in db["orders"] if o["uid"] == uid), uid)
         
-        # 初めて検知した注文（新規）
         if uid not in st.session_state.known_kitchen_state:
             st.toast(f"🔔 新規注文（番号: {display_id}）が入りました！", icon="🔥")
             play_new_sound = True
             
-        # 知っている注文だが、前回より訂正回数が増えている場合
         elif current_rev_count > st.session_state.known_kitchen_state[uid]:
             st.toast(f"⚠️ 番号 {display_id} に訂正が入りました！", icon="⚠️")
             play_rev_sound = True
             
-    # 状態を最新に更新
     st.session_state.known_kitchen_state = current_kitchen_state.copy()
 
     # --- 通知音を鳴らす処理（音源の使い分け） ---
     if play_new_sound:
-        # 新規注文用（高いチャイム音）
+        # 新規注文用（短いビープ音へ変更）
         st.markdown(
             """
             <audio autoplay>
-                <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+                <source src="https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3" type="audio/mpeg">
             </audio>
             """,
             unsafe_allow_html=True
         )
     elif play_rev_sound:
-        # 訂正用（短く鋭いシステムビープ音に変更）
+        # 訂正用（チャイム音へ変更）
         st.markdown(
             """
             <audio autoplay>
-                <source src="https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3" type="audio/mpeg">
+                <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
             </audio>
             """,
             unsafe_allow_html=True
