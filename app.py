@@ -15,36 +15,12 @@ db = get_database()
 
 st.set_page_config(page_title="模擬店オーダーシステム", page_icon="🍔", layout="wide")
 
-# --- 全体のデザイン調整（スマホでの横並び強制・省スペース化） ---
+# --- 全体のデザイン調整（上に詰める） ---
 st.markdown("""
     <style>
         .block-container {
             padding-top: 1.5rem;
             padding-bottom: 2rem;
-        }
-        
-        /* スマホ画面（幅576px以下）のレイアウト強制調整 */
-        @media (max-width: 576px) {
-            /* カラムの自動縦並び（スタック）を無効化し、常に横並びをキープする */
-            div[data-testid="stHorizontalBlock"] {
-                flex-direction: row !important;
-                flex-wrap: nowrap !important;
-                align-items: center !important;
-            }
-            /* 1つ目のカラム（商品名やメインボタン）の幅を広く確保 */
-            div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(1) {
-                flex: 5 !important;
-                width: auto !important;
-                min-width: 0 !important;
-            }
-            /* 2つ目・3つ目のカラム（＋・ーボタンなど）はコンパクトに */
-            div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(n+2) {
-                flex: 2 !important;
-                width: auto !important;
-                min-width: 0 !important;
-                padding-left: 0.2rem !important;
-                padding-right: 0.2rem !important;
-            }
         }
     </style>
 """, unsafe_allow_html=True)
@@ -102,20 +78,22 @@ if mode == "🛒 受付（レジ）":
         
         if len(cart_items) > 0:
             for item, count in cart_items.items():
-                col1, col2, col3 = st.columns([5, 2, 2])
+                # 1行目: 商品名と数量
+                st.markdown(f"**{item}** （数量: **{count}** 個）")
+                # 2行目: マイナス・プラスボタン
+                col1, col2 = st.columns(2)
                 with col1:
-                    # 縦幅を削減するためにHTMLで少しコンパクトに表示
-                    st.markdown(f"<div style='line-height: 1.2; padding-top: 0.5rem;'><b>{item}</b><br><small>数量: <b>{count}</b> 個</small></div>", unsafe_allow_html=True)
-                with col2:
-                    if st.button("➖", key=f"minus_{item}", use_container_width=True):
+                    if st.button("➖ 減らす", key=f"minus_{item}", use_container_width=True):
                         st.session_state.cart[item] -= 1
                         st.rerun()
-                with col3:
-                    if st.button("➕", key=f"plus_{item}", use_container_width=True):
+                with col2:
+                    if st.button("➕ 増やす", key=f"plus_{item}", use_container_width=True):
                         st.session_state.cart[item] += 1
                         st.rerun()
+                st.write("") # 各商品間の隙間
             
-            st.write("")
+            st.divider()
+            
             col_btn1, col_btn2 = st.columns([2, 1])
             with col_btn1:
                 if st.button("🚀 注文を送信", type="primary", use_container_width=True):
@@ -175,7 +153,6 @@ if mode == "🛒 受付（レジ）":
                                 with c1:
                                     st.write(item)
                                 with c2:
-                                    # ラベルを非表示にして縦スペースを節約し、横並びを綺麗にする
                                     new_val = st.number_input("個数", min_value=0, value=current_val, key=f"num_{order['uid']}_{item}", label_visibility="collapsed")
                                     st.session_state[edit_key][item] = new_val
 
