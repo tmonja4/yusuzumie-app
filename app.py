@@ -15,7 +15,7 @@ db = get_database()
 
 st.set_page_config(page_title="模擬店オーダーシステム", page_icon="🍔", layout="wide")
 
-# メニューリストの更新
+# メニューリスト
 MENU = [
     "🍋【ドリンク】ひとつぶレモネード", "🫐【ドリンク】ブルーベリースムージー", "🍵【ドリンク】抹茶ラテ",
     "🥣【甘味】ぜんざい", "🥖【甘味】チュロス", "🥭【甘味】マンゴープリン", "🍠【甘味】大学いも", "🍡【甘味】五大くずもち",
@@ -101,6 +101,10 @@ if mode == "🛒 受付（レジ）":
     st.divider()
     
     st.subheader("📝 注文状況・訂正")
+    
+    if st.button("🔄 最新の調理状況を確認する", use_container_width=True):
+        st.rerun()
+        
     if not db["orders"]:
         st.write("送信された注文はありません。")
     else:
@@ -164,14 +168,41 @@ elif mode == "🍳 調理場（キッチン）":
     if "known_kitchen_state" not in st.session_state:
         st.session_state.known_kitchen_state = current_kitchen_state.copy()
         
+    play_new_sound = False
+    play_rev_sound = False
+        
     for uid, is_rev in current_kitchen_state.items():
         display_id = next((o["display_id"] for o in db["orders"] if o["uid"] == uid), uid)
         if uid not in st.session_state.known_kitchen_state:
             st.toast(f"🔔 新規注文（番号: {display_id}）が入りました！", icon="🔥")
+            play_new_sound = True
         elif is_rev and not st.session_state.known_kitchen_state[uid]:
             st.toast(f"⚠️ 番号 {display_id} に訂正が入りました！", icon="⚠️")
+            play_rev_sound = True
             
     st.session_state.known_kitchen_state = current_kitchen_state.copy()
+
+    # --- 通知音を鳴らす処理（音源の使い分け） ---
+    if play_new_sound:
+        # 新規注文用（高いチャイム音）
+        st.markdown(
+            """
+            <audio autoplay>
+                <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+            </audio>
+            """,
+            unsafe_allow_html=True
+        )
+    elif play_rev_sound:
+        # 訂正用（少し低めで注意を引く音）
+        st.markdown(
+            """
+            <audio autoplay>
+                <source src="https://assets.mixkit.co/active_storage/sfx/2673/2673-preview.mp3" type="audio/mpeg">
+            </audio>
+            """,
+            unsafe_allow_html=True
+        )
 
     if st.button("🔄 最新の注文を手動で確認する", use_container_width=True):
         st.rerun()
