@@ -40,19 +40,6 @@ st.markdown("""
             padding-bottom: 2rem;
         }
         
-        /* ======== スマホ画面でカラムが縦に落ちるのを防ぐ＆はみ出し防止 ======== */
-        @media (max-width: 576px) {
-            div[data-testid="stHorizontalBlock"] {
-                flex-direction: row !important;
-                flex-wrap: nowrap !important;
-                gap: 0.2rem !important; /* 隙間を極力削って横幅に収める */
-            }
-            div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-                min-width: 0 !important; /* カラムが自動で縮むようにする */
-                flex-grow: 0 !important; /* カラムが勝手に広がらないようにする */
-            }
-        }
-        
         /* ======== ボタンの文字とサイズ調整 ======== */
         div[data-testid="stButton"] button {
             height: auto !important;
@@ -146,7 +133,6 @@ if mode == "🛒 受付（レジ）":
                 subtotal = item_price * count
                 total_amount += subtotal
                 
-                # --- カート内の文字サイズを大きく調整 ---
                 st.markdown(
                     f"<div style='font-size: 1.3rem; line-height: 1.4; margin-bottom: 5px;'>"
                     f"<b>{item}</b><br>"
@@ -155,13 +141,14 @@ if mode == "🛒 受付（レジ）":
                     unsafe_allow_html=True
                 )
                 
-                col_minus, col_plus, col_spacer = st.columns([1, 1, 4])
+                # 半分ずつの幅で下に配置
+                col_minus, col_plus = st.columns(2)
                 with col_minus:
-                    if st.button("➖", key=f"minus_{item}"):
+                    if st.button("➖", key=f"minus_{item}", use_container_width=True):
                         st.session_state.cart[item] -= 1
                         st.rerun()
                 with col_plus:
-                    if st.button("➕", key=f"plus_{item}"):
+                    if st.button("➕", key=f"plus_{item}", use_container_width=True):
                         st.session_state.cart[item] += 1
                         st.rerun()
                 st.write("") 
@@ -174,7 +161,7 @@ if mode == "🛒 受付（レジ）":
             """, unsafe_allow_html=True)
             
             st.write("")
-            col_btn1, col_btn2 = st.columns([2, 1])
+            col_btn1, col_btn2 = st.columns(2)
             with col_btn1:
                 if st.button("🚀 注文を送信", type="primary", use_container_width=True):
                     db["order_count"] += 1
@@ -229,13 +216,22 @@ if mode == "🛒 受付（レジ）":
                         st.write("▼数量を変更して「訂正を送信」を押してください")
                         for item in MENU:
                             current_val = st.session_state[edit_key].get(item, 0)
+                            # チェックボックスで商品を追加するか、既に1個以上ある場合
                             if current_val > 0 or st.checkbox(f"{item} を追加", key=f"chk_{order['uid']}_{item}"):
-                                c1, c2 = st.columns([3, 1])
+                                st.markdown(f"**{item}** : {current_val} 個")
+                                
+                                # 訂正画面でも下に「➖」「➕」を配置するスタイルに変更
+                                c1, c2 = st.columns(2)
                                 with c1:
-                                    st.write(item)
+                                    if st.button("➖", key=f"edit_minus_{order['uid']}_{item}", use_container_width=True):
+                                        if st.session_state[edit_key][item] > 0:
+                                            st.session_state[edit_key][item] -= 1
+                                            st.rerun()
                                 with c2:
-                                    new_val = st.number_input("個数", min_value=0, value=current_val, key=f"num_{order['uid']}_{item}", label_visibility="collapsed")
-                                    st.session_state[edit_key][item] = new_val
+                                    if st.button("➕", key=f"edit_plus_{order['uid']}_{item}", use_container_width=True):
+                                        st.session_state[edit_key][item] = current_val + 1
+                                        st.rerun()
+                                st.write("")
 
                         if st.button("🔄 この内容で訂正を送信", key=f"btn_edit_{order['uid']}", type="primary", use_container_width=True):
                             old_items = order["items"].copy()
