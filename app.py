@@ -100,9 +100,10 @@ if mode == "🛒 受付（レジ）":
                     db["order_count"] += 1
                     
                     uid = db["order_count"]
-                    display_id = uid % 20
+                    # 注文番号を30でループさせる処理に変更
+                    display_id = uid % 30
                     if display_id == 0:
-                        display_id = 20
+                        display_id = 30
 
                     new_order = {
                         "uid": uid,
