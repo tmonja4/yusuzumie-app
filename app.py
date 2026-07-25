@@ -67,7 +67,8 @@ if mode == "🛒 受付（レジ）":
     if "cart" not in st.session_state:
         st.session_state.cart = {}
 
-    tab_order, tab_status = st.tabs(["🛒 注文入力", "📋 注文状況・訂正"])
+    # タブに「売上集計」を追加
+    tab_order, tab_status, tab_sales = st.tabs(["🛒 注文入力", "📋 注文状況・訂正", "📊 売上集計"])
 
     with tab_order:
         st.subheader("1. 注文を選択")
@@ -195,6 +196,43 @@ if mode == "🛒 受付（レジ）":
                             else:
                                 st.warning("変更がありませんでした。")
 
+    # 受付画面用の売上集計タブ
+    with tab_sales:
+        st.subheader("📊 商品ごとの売上（注文）個数")
+        st.write("※訂正・取り消しが行われた場合、ここの集計数も自動で計算し直されます。")
+        st.write("") 
+        
+        # 売上集計ロジック
+        sales_counts = {item: 0 for item in MENU}
+        for o in db["orders"]:
+            for item, count in o["items"].items():
+                if item in sales_counts:
+                    sales_counts[item] += count
+        
+        col1, col2 = st.columns(2)
+        for i, item in enumerate(MENU):
+            display_name = item
+            target = 20 
+            
+            if "】" in item:
+                emoji = item.split("【")[0]
+                name = item.split("】")[1]
+                display_name = f"{emoji} {name}"
+                
+            if "【つまみ】" in item:
+                target = 30
+                
+            current_count = sales_counts[item]
+            
+            display_text = f"#### {display_name}： {current_count}個 ({current_count} / {target})"
+            
+            if i % 2 == 0:
+                with col1:
+                    st.markdown(display_text)
+            else:
+                with col2:
+                    st.markdown(display_text)
+
 # ==========================================
 # 🍳 調理場（キッチン）画面
 # ==========================================
@@ -289,7 +327,7 @@ elif mode == "🍳 調理場（キッチン）":
     with tab3:
         st.subheader("📊 商品ごとの売上（注文）個数")
         st.write("※訂正・取り消しが行われた場合、ここの集計数も自動で計算し直されます。")
-        st.write("") # 少し余白
+        st.write("") 
         
         # 売上集計ロジック
         sales_counts = {item: 0 for item in MENU}
@@ -298,25 +336,21 @@ elif mode == "🍳 調理場（キッチン）":
                 if item in sales_counts:
                     sales_counts[item] += count
         
-        # カテゴリ分けをせず、全体を2列で一覧表示する
         col1, col2 = st.columns(2)
         for i, item in enumerate(MENU):
             display_name = item
-            target = 20 # ドリンク、甘味の目標値
+            target = 20 
             
-            # アイコンと名前だけを抽出
             if "】" in item:
                 emoji = item.split("【")[0]
                 name = item.split("】")[1]
                 display_name = f"{emoji} {name}"
                 
-            # つまみは目標値30
             if "【つまみ】" in item:
                 target = 30
                 
             current_count = sales_counts[item]
             
-            # 見やすく大きな文字で、現在の個数と目標個数を表示
             display_text = f"#### {display_name}： {current_count}個 ({current_count} / {target})"
             
             if i % 2 == 0:
