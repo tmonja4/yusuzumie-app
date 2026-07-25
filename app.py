@@ -122,7 +122,6 @@ if mode == "🛒 受付（レジ）":
         
         with t_drink:
             for item in MENU_DRINK:
-                # メニューボタンは画面幅いっぱい（use_container_width=True）
                 if st.button(f"{item} ({PRICES[item]}円)", key=f"btn_{item}", use_container_width=True):
                     st.session_state.cart[item] = st.session_state.cart.get(item, 0) + 1
         with t_sweet:
@@ -147,17 +146,21 @@ if mode == "🛒 受付（レジ）":
                 subtotal = item_price * count
                 total_amount += subtotal
                 
-                st.markdown(f"**{item}**<br>{item_price}円 × {count}個 ＝ **{subtotal:,}円**", unsafe_allow_html=True)
+                # --- カート内の文字サイズを大きく調整 ---
+                st.markdown(
+                    f"<div style='font-size: 1.3rem; line-height: 1.4; margin-bottom: 5px;'>"
+                    f"<b>{item}</b><br>"
+                    f"{item_price}円 × {count}個 ＝ <b>{subtotal:,}円</b>"
+                    f"</div>", 
+                    unsafe_allow_html=True
+                )
                 
-                # ➕➖ボタンをコンパクトにするため、比率を [1, 1, 4] にし、use_container_width を外す
                 col_minus, col_plus, col_spacer = st.columns([1, 1, 4])
                 with col_minus:
-                    # use_container_width=True を削除してボタンが横に伸びないようにする
                     if st.button("➖", key=f"minus_{item}"):
                         st.session_state.cart[item] -= 1
                         st.rerun()
                 with col_plus:
-                    # 同上
                     if st.button("➕", key=f"plus_{item}"):
                         st.session_state.cart[item] += 1
                         st.rerun()
