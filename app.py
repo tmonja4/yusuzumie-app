@@ -40,32 +40,31 @@ st.markdown("""
             padding-bottom: 2rem;
         }
         
-        /* ======== スマホ画面でカラムが縦に落ちるのを防ぎ、横並びを強制する ======== */
+        /* ======== スマホ画面でカラムが縦に落ちるのを防ぐ＆はみ出し防止 ======== */
         @media (max-width: 576px) {
             div[data-testid="stHorizontalBlock"] {
                 flex-direction: row !important;
                 flex-wrap: nowrap !important;
+                gap: 0.2rem !important; /* 隙間を極力削って横幅に収める */
             }
             div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-                min-width: 0 !important;
-                padding-left: 0.2rem !important;
-                padding-right: 0.2rem !important;
+                min-width: 0 !important; /* カラムが自動で縮むようにする */
             }
         }
         
-        /* ======== ボタンの文字をスマホの枠いっぱいに大きくする ======== */
+        /* ======== ボタンの文字とサイズ調整 ======== */
         div[data-testid="stButton"] button {
             height: auto !important;
-            min-height: 3.5rem !important;
-            padding: 0.5rem !important;
+            min-height: 2.8rem !important;
+            padding: 0.3rem !important;
         }
         
         div[data-testid="stButton"] button p {
-            font-size: 1.15rem !important;
-            font-weight: 600 !important;
+            font-size: 1.2rem !important;
+            font-weight: bold !important;
             white-space: normal !important;
             word-break: keep-all !important;
-            line-height: 1.3 !important;
+            line-height: 1.2 !important;
             margin: 0 !important;
         }
         
@@ -147,12 +146,14 @@ if mode == "🛒 受付（レジ）":
                 total_amount += subtotal
                 
                 st.markdown(f"**{item}**<br>{item_price}円 × {count}個 ＝ **{subtotal:,}円**", unsafe_allow_html=True)
-                col1, col2 = st.columns(2)
-                with col1:
+                
+                # 左右に余白(1)を作り、中央のボタン(2)の幅をギュッと狭める
+                col_space1, col_minus, col_plus, col_space2 = st.columns([1, 2, 2, 1])
+                with col_minus:
                     if st.button("➖", key=f"minus_{item}", use_container_width=True):
                         st.session_state.cart[item] -= 1
                         st.rerun()
-                with col2:
+                with col_plus:
                     if st.button("➕", key=f"plus_{item}", use_container_width=True):
                         st.session_state.cart[item] += 1
                         st.rerun()
