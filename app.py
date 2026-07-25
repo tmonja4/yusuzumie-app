@@ -6,12 +6,29 @@ try:
 except ImportError:
     st_autorefresh = None
 
-# --- 1. データベース設定 ---
+# --- 1. データベース・価格設定 ---
 @st.cache_resource
 def get_database():
     return {"orders": [], "order_count": 0}
 
 db = get_database()
+
+# 商品ごとの価格設定
+PRICES = {
+    "🍋【ドリンク】ひとつぶレモネード": 300,
+    "🫐【ドリンク】ブルーベリースムージー": 300,
+    "🍵【ドリンク】抹茶ラテ": 300,
+    "🥣【甘味】ぜんざい": 200,
+    "🥭【甘味】マンゴープリン": 200,
+    "🍠【甘味】大学いも": 200,
+    "🍡【甘味】五大くずもち": 200,
+    "🍉【甘味】カットスイカ": 100,
+    "🍗【つまみ】唐揚げ": 100,
+    "🫛【つまみ】枝豆": 100,
+    "🥔【つまみ】ハッシュドポテト": 100,
+    "🥒【つまみ】カップきゅうり": 100,
+    "🥟【つまみ】カップ餃子": 100
+}
 
 st.set_page_config(page_title="模擬店オーダーシステム", page_icon="🍔", layout="wide")
 
@@ -38,10 +55,26 @@ st.markdown("""
             line-height: 1.3 !important;
             margin: 0 !important;
         }
+        
+        /* 合計金額表示用 */
+        .total-price-box {
+            background-color: #ffe6e6;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 10px 0;
+            border: 2px solid #ff4b4b;
+        }
+        .total-price-text {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff4b4b;
+            margin: 0;
+        }
     </style>
 """, unsafe_allow_html=True)
 
-# メニューリスト（カットスイカを追加）
+# メニューリスト
 MENU_DRINK = ["🍋【ドリンク】ひとつぶレモネード", "🫐【ドリンク】ブルーベリースムージー", "🍵【ドリンク】抹茶ラテ"]
 MENU_SWEET = ["🥣【甘味】ぜんざい", "🥭【甘味】マンゴープリン", "🍠【甘味】大学いも", "🍡【甘味】五大くずもち", "🍉【甘味】カットスイカ"]
 MENU_SNACK = ["🍗【つまみ】唐揚げ", "🫛【つまみ】枝豆", "🥔【つまみ】ハッシュドポテト", "🥒【つまみ】カップきゅうり", "🥟【つまみ】カップ餃子"]
@@ -67,8 +100,7 @@ if mode == "🛒 受付（レジ）":
     if "cart" not in st.session_state:
         st.session_state.cart = {}
 
-    # タブに「売上集計」を追加
-    tab_order, tab_status, tab_sales = st.tabs(["🛒 注文入力", "📋 注文状況・訂正", "📊 売上集計"])
+    tab_order, tab_status, tab_sales = st.tabs(["🛒 注文・お会計", "📋 注文状況・訂正", "📊 売上集計"])
 
     with tab_order:
         st.subheader("1. 注文を選択")
@@ -77,25 +109,31 @@ if mode == "🛒 受付（レジ）":
         
         with t_drink:
             for item in MENU_DRINK:
-                if st.button(item, use_container_width=True):
+                if st.button(f"{item} ({PRICES[item]}円)", key=f"btn_{item}", use_container_width=True):
                     st.session_state.cart[item] = st.session_state.cart.get(item, 0) + 1
         with t_sweet:
             for item in MENU_SWEET:
-                if st.button(item, use_container_width=True):
+                if st.button(f"{item} ({PRICES[item]}円)", key=f"btn_{item}", use_container_width=True):
                     st.session_state.cart[item] = st.session_state.cart.get(item, 0) + 1
         with t_snack:
             for item in MENU_SNACK:
-                if st.button(item, use_container_width=True):
+                if st.button(f"{item} ({PRICES[item]}円)", key=f"btn_{item}", use_container_width=True):
                     st.session_state.cart[item] = st.session_state.cart.get(item, 0) + 1
 
         st.divider()
         
-        st.subheader("2. カートの確認")
+        st.subheader("2. お会計・カートの確認")
         cart_items = {k: v for k, v in st.session_state.cart.items() if v > 0}
         
         if len(cart_items) > 0:
+            total_amount = 0
+            
             for item, count in cart_items.items():
-                st.markdown(f"**{item}** （数量: **{count}** 個）")
+                item_price = PRICES[item]
+                subtotal = item_price * count
+                total_amount += subtotal
+                
+                st.markdown(f"**{item}**<br>{item_price}円 × {count}個 ＝ **{subtotal:,}円**", unsafe_allow_html=True)
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button("➖ 減らす", key=f"minus_{item}", use_container_width=True):
@@ -107,8 +145,15 @@ if mode == "🛒 受付（レジ）":
                         st.rerun()
                 st.write("") 
             
-            st.divider()
+            # --- 合計金額をレジっぽく目立たせる ---
+            st.markdown(f"""
+                <div class="total-price-box">
+                    <p style="margin: 0; color: #ff4b4b; font-size: 1.2rem;">お会計合計</p>
+                    <p class="total-price-text">{total_amount:,} 円</p>
+                </div>
+            """, unsafe_allow_html=True)
             
+            st.write("")
             col_btn1, col_btn2 = st.columns([2, 1])
             with col_btn1:
                 if st.button("🚀 注文を送信", type="primary", use_container_width=True):
@@ -124,6 +169,7 @@ if mode == "🛒 受付（レジ）":
                         "display_id": display_id,
                         "time": datetime.now().strftime("%H:%M:%S"),
                         "items": cart_items.copy(),
+                        "total_amount": total_amount, 
                         "status": "調理待ち", 
                         "is_revised": False,
                         "revision_count": 0,
@@ -131,7 +177,7 @@ if mode == "🛒 受付（レジ）":
                     }
                     db["orders"].insert(0, new_order)
                     st.session_state.cart = {}
-                    st.success(f"【 {new_order['display_id']} 番 】を送信しました！")
+                    st.success(f"【 {new_order['display_id']} 番 】の注文（{total_amount:,}円）を送信しました！")
                     st.rerun()
             with col_btn2:
                 if st.button("🗑️ 空にする", use_container_width=True):
@@ -151,7 +197,7 @@ if mode == "🛒 受付（レジ）":
         else:
             for order in db["orders"]:
                 if order["status"] == "調理完了":
-                    with st.expander(f"✅ 番号 {order['display_id']} : 調理完了"):
+                    with st.expander(f"✅ 番号 {order['display_id']} : 調理完了 ({order.get('total_amount', 0):,}円)"):
                         for item, count in order["items"].items():
                             st.write(f" - {item} : {count}個")
                 else:
@@ -186,7 +232,11 @@ if mode == "🛒 受付（レジ）":
                                     else: diffs.append(f"🔄 {k} ({old_v}個 ➡️ {new_v}個)")
                             
                             if diffs:
+                                # 訂正後の合計金額を再計算
+                                new_total = sum(PRICES[k] * v for k, v in new_items.items())
+                                
                                 order["items"] = new_items
+                                order["total_amount"] = new_total
                                 order["is_revised"] = True
                                 order["revision_count"] = order.get("revision_count", 0) + 1 
                                 order["diff_msg"] = "\n".join(diffs)
@@ -196,13 +246,12 @@ if mode == "🛒 受付（レジ）":
                             else:
                                 st.warning("変更がありませんでした。")
 
-    # 受付画面用の売上集計タブ
+    # --- 受付の売上集計タブ ---
     with tab_sales:
-        st.subheader("📊 商品ごとの売上（注文）個数")
-        st.write("※訂正・取り消しが行われた場合、ここの集計数も自動で計算し直されます。")
+        st.subheader("📊 商品ごとの売上・金額集計")
+        st.write("※訂正・取り消しが行われた場合、ここの集計数や金額も自動で計算し直されます。")
         st.write("") 
         
-        # 売上集計ロジック
         sales_counts = {item: 0 for item in MENU}
         for o in db["orders"]:
             for item, count in o["items"].items():
@@ -210,6 +259,8 @@ if mode == "🛒 受付（レジ）":
                     sales_counts[item] += count
         
         col1, col2 = st.columns(2)
+        total_revenue = 0
+        
         for i, item in enumerate(MENU):
             display_name = item
             target = 20 
@@ -223,15 +274,21 @@ if mode == "🛒 受付（レジ）":
                 target = 30
                 
             current_count = sales_counts[item]
+            item_revenue = current_count * PRICES[item]
+            total_revenue += item_revenue
             
-            display_text = f"#### {display_name}： {current_count}個 ({current_count} / {target})"
+            display_text = f"#### {display_name}\n販売数: **{current_count}** 個 ({current_count} / {target})<br>売上額: **{item_revenue:,}円**"
             
             if i % 2 == 0:
                 with col1:
-                    st.markdown(display_text)
+                    st.markdown(display_text, unsafe_allow_html=True)
             else:
                 with col2:
-                    st.markdown(display_text)
+                    st.markdown(display_text, unsafe_allow_html=True)
+                    
+        st.divider()
+        st.markdown(f"<h2 style='text-align: center;'>💰 模擬店 総売上金額: {total_revenue:,} 円</h2>", unsafe_allow_html=True)
+
 
 # ==========================================
 # 🍳 調理場（キッチン）画面
@@ -324,12 +381,12 @@ elif mode == "🍳 調理場（キッチン）":
                 st.write(f" - {item}: {count}個")
             st.divider()
             
+    # --- 調理場の売上集計タブ ---
     with tab3:
-        st.subheader("📊 商品ごとの売上（注文）個数")
-        st.write("※訂正・取り消しが行われた場合、ここの集計数も自動で計算し直されます。")
+        st.subheader("📊 商品ごとの売上・金額集計")
+        st.write("※訂正・取り消しが行われた場合、ここの集計数や金額も自動で計算し直されます。")
         st.write("") 
         
-        # 売上集計ロジック
         sales_counts = {item: 0 for item in MENU}
         for o in db["orders"]:
             for item, count in o["items"].items():
@@ -337,6 +394,8 @@ elif mode == "🍳 調理場（キッチン）":
                     sales_counts[item] += count
         
         col1, col2 = st.columns(2)
+        total_revenue = 0
+        
         for i, item in enumerate(MENU):
             display_name = item
             target = 20 
@@ -350,12 +409,17 @@ elif mode == "🍳 調理場（キッチン）":
                 target = 30
                 
             current_count = sales_counts[item]
+            item_revenue = current_count * PRICES[item]
+            total_revenue += item_revenue
             
-            display_text = f"#### {display_name}： {current_count}個 ({current_count} / {target})"
+            display_text = f"#### {display_name}\n販売数: **{current_count}** 個 ({current_count} / {target})<br>売上額: **{item_revenue:,}円**"
             
             if i % 2 == 0:
                 with col1:
-                    st.markdown(display_text)
+                    st.markdown(display_text, unsafe_allow_html=True)
             else:
                 with col2:
-                    st.markdown(display_text)
+                    st.markdown(display_text, unsafe_allow_html=True)
+                    
+        st.divider()
+        st.markdown(f"<h2 style='text-align: center;'>💰 模擬店 総売上金額: {total_revenue:,} 円</h2>", unsafe_allow_html=True)
