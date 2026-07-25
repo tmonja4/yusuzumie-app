@@ -26,24 +26,24 @@ st.markdown("""
         /* ======== ボタンの文字をスマホの枠いっぱいに大きくする ======== */
         div[data-testid="stButton"] button {
             height: auto !important;
-            min-height: 3.5rem !important; /* タップしやすい縦幅を確保 */
+            min-height: 3.5rem !important;
             padding: 0.5rem !important;
         }
         
         div[data-testid="stButton"] button p {
-            font-size: 1.15rem !important; /* 文字サイズを少し大きく */
-            font-weight: 600 !important;   /* 太字で見やすく */
-            white-space: normal !important; /* 文字が長い場合は枠内で自動で改行させる */
-            word-break: keep-all !important; /* 単語の途中で不自然に改行されないようにする */
+            font-size: 1.15rem !important;
+            font-weight: 600 !important;
+            white-space: normal !important;
+            word-break: keep-all !important;
             line-height: 1.3 !important;
             margin: 0 !important;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# メニューリスト
+# メニューリスト（カットスイカを追加）
 MENU_DRINK = ["🍋【ドリンク】ひとつぶレモネード", "🫐【ドリンク】ブルーベリースムージー", "🍵【ドリンク】抹茶ラテ"]
-MENU_SWEET = ["🥣【甘味】ぜんざい", "🥭【甘味】マンゴープリン", "🍠【甘味】大学いも", "🍡【甘味】五大くずもち"]
+MENU_SWEET = ["🥣【甘味】ぜんざい", "🥭【甘味】マンゴープリン", "🍠【甘味】大学いも", "🍡【甘味】五大くずもち", "🍉【甘味】カットスイカ"]
 MENU_SNACK = ["🍗【つまみ】唐揚げ", "🫛【つまみ】枝豆", "🥔【つまみ】ハッシュドポテト", "🥒【つまみ】カップきゅうり", "🥟【つまみ】カップ餃子"]
 MENU = MENU_DRINK + MENU_SWEET + MENU_SNACK
 
@@ -94,9 +94,7 @@ if mode == "🛒 受付（レジ）":
         
         if len(cart_items) > 0:
             for item, count in cart_items.items():
-                # 1行目: 商品名と数量
                 st.markdown(f"**{item}** （数量: **{count}** 個）")
-                # 2行目: マイナス・プラスボタン
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button("➖ 減らす", key=f"minus_{item}", use_container_width=True):
@@ -106,7 +104,7 @@ if mode == "🛒 受付（レジ）":
                     if st.button("➕ 増やす", key=f"plus_{item}", use_container_width=True):
                         st.session_state.cart[item] += 1
                         st.rerun()
-                st.write("") # 各商品間の隙間
+                st.write("") 
             
             st.divider()
             
@@ -290,7 +288,8 @@ elif mode == "🍳 調理場（キッチン）":
             
     with tab3:
         st.subheader("📊 商品ごとの売上（注文）個数")
-        st.write("※現在システムに記録されている全注文（調理待ち＋調理完了）の合計数です。受付側での訂正内容も自動で反映されます。")
+        st.write("※訂正・取り消しが行われた場合、ここの集計数も自動で計算し直されます。")
+        st.write("") # 少し余白
         
         # 売上集計ロジック
         sales_counts = {item: 0 for item in MENU}
@@ -303,14 +302,26 @@ elif mode == "🍳 調理場（キッチン）":
         col1, col2 = st.columns(2)
         for i, item in enumerate(MENU):
             display_name = item
+            target = 20 # ドリンク、甘味の目標値
+            
+            # アイコンと名前だけを抽出
             if "】" in item:
                 emoji = item.split("【")[0]
                 name = item.split("】")[1]
                 display_name = f"{emoji} {name}"
                 
+            # つまみは目標値30
+            if "【つまみ】" in item:
+                target = 30
+                
+            current_count = sales_counts[item]
+            
+            # 見やすく大きな文字で、現在の個数と目標個数を表示
+            display_text = f"#### {display_name}： {current_count}個 ({current_count} / {target})"
+            
             if i % 2 == 0:
                 with col1:
-                    st.write(f"{display_name} : **{sales_counts[item]}** 個")
+                    st.markdown(display_text)
             else:
                 with col2:
-                    st.write(f"{display_name} : **{sales_counts[item]}** 個")
+                    st.markdown(display_text)
