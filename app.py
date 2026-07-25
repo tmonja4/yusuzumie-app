@@ -40,6 +40,19 @@ st.markdown("""
             padding-bottom: 2rem;
         }
         
+        /* ======== スマホ画面でカラムが縦に落ちるのを防ぎ、横並びを強制する ======== */
+        @media (max-width: 576px) {
+            div[data-testid="stHorizontalBlock"] {
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+            }
+            div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+                min-width: 0 !important;
+                padding-left: 0.2rem !important;
+                padding-right: 0.2rem !important;
+            }
+        }
+        
         /* ======== ボタンの文字をスマホの枠いっぱいに大きくする ======== */
         div[data-testid="stButton"] button {
             height: auto !important;
@@ -145,7 +158,6 @@ if mode == "🛒 受付（レジ）":
                         st.rerun()
                 st.write("") 
             
-            # --- 合計金額をレジっぽく目立たせる ---
             st.markdown(f"""
                 <div class="total-price-box">
                     <p style="margin: 0; color: #ff4b4b; font-size: 1.2rem;">お会計合計</p>
@@ -232,7 +244,6 @@ if mode == "🛒 受付（レジ）":
                                     else: diffs.append(f"🔄 {k} ({old_v}個 ➡️ {new_v}個)")
                             
                             if diffs:
-                                # 訂正後の合計金額を再計算
                                 new_total = sum(PRICES[k] * v for k, v in new_items.items())
                                 
                                 order["items"] = new_items
@@ -246,7 +257,6 @@ if mode == "🛒 受付（レジ）":
                             else:
                                 st.warning("変更がありませんでした。")
 
-    # --- 受付の売上集計タブ ---
     with tab_sales:
         st.subheader("📊 商品ごとの売上・金額集計")
         st.write("※訂正・取り消しが行われた場合、ここの集計数や金額も自動で計算し直されます。")
@@ -381,7 +391,6 @@ elif mode == "🍳 調理場（キッチン）":
                 st.write(f" - {item}: {count}個")
             st.divider()
             
-    # --- 調理場の売上集計タブ ---
     with tab3:
         st.subheader("📊 商品ごとの売上・金額集計")
         st.write("※訂正・取り消しが行われた場合、ここの集計数や金額も自動で計算し直されます。")
