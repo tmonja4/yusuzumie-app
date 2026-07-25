@@ -147,8 +147,8 @@ if mode == "🛒 受付（レジ）":
                 
                 st.markdown(f"**{item}**<br>{item_price}円 × {count}個 ＝ **{subtotal:,}円**", unsafe_allow_html=True)
                 
-                # 左右に余白(1)を作り、中央のボタン(2)の幅をギュッと狭める
-                col_space1, col_minus, col_plus, col_space2 = st.columns([1, 2, 2, 1])
+                # ボタンを左寄せにしつつ、右側に余白(5)を設ける
+                col_minus, col_plus, col_spacer = st.columns([2, 2, 5])
                 with col_minus:
                     if st.button("➖", key=f"minus_{item}", use_container_width=True):
                         st.session_state.cart[item] -= 1
