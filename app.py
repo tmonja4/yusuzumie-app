@@ -149,11 +149,11 @@ if mode == "🛒 受付（レジ）":
                 st.markdown(f"**{item}**<br>{item_price}円 × {count}個 ＝ **{subtotal:,}円**", unsafe_allow_html=True)
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("➖ 減らす", key=f"minus_{item}", use_container_width=True):
+                    if st.button("➖", key=f"minus_{item}", use_container_width=True):
                         st.session_state.cart[item] -= 1
                         st.rerun()
                 with col2:
-                    if st.button("➕ 増やす", key=f"plus_{item}", use_container_width=True):
+                    if st.button("➕", key=f"plus_{item}", use_container_width=True):
                         st.session_state.cart[item] += 1
                         st.rerun()
                 st.write("") 
