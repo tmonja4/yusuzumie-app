@@ -49,6 +49,7 @@ st.markdown("""
             }
             div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
                 min-width: 0 !important; /* カラムが自動で縮むようにする */
+                flex-grow: 0 !important; /* カラムが勝手に広がらないようにする */
             }
         }
         
@@ -121,6 +122,7 @@ if mode == "🛒 受付（レジ）":
         
         with t_drink:
             for item in MENU_DRINK:
+                # メニューボタンは画面幅いっぱい（use_container_width=True）
                 if st.button(f"{item} ({PRICES[item]}円)", key=f"btn_{item}", use_container_width=True):
                     st.session_state.cart[item] = st.session_state.cart.get(item, 0) + 1
         with t_sweet:
@@ -147,14 +149,16 @@ if mode == "🛒 受付（レジ）":
                 
                 st.markdown(f"**{item}**<br>{item_price}円 × {count}個 ＝ **{subtotal:,}円**", unsafe_allow_html=True)
                 
-                # ボタンの幅を以前の半分程度にするため、比率を [1, 1, 8] に設定
-                col_minus, col_plus, col_spacer = st.columns([1, 1, 8])
+                # ➕➖ボタンをコンパクトにするため、比率を [1, 1, 4] にし、use_container_width を外す
+                col_minus, col_plus, col_spacer = st.columns([1, 1, 4])
                 with col_minus:
-                    if st.button("➖", key=f"minus_{item}", use_container_width=True):
+                    # use_container_width=True を削除してボタンが横に伸びないようにする
+                    if st.button("➖", key=f"minus_{item}"):
                         st.session_state.cart[item] -= 1
                         st.rerun()
                 with col_plus:
-                    if st.button("➕", key=f"plus_{item}", use_container_width=True):
+                    # 同上
+                    if st.button("➕", key=f"plus_{item}"):
                         st.session_state.cart[item] += 1
                         st.rerun()
                 st.write("") 
