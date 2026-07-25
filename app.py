@@ -1,10 +1,13 @@
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 try:
     from streamlit_autorefresh import st_autorefresh
 except ImportError:
     st_autorefresh = None
+
+# --- 日本時間の設定 ---
+JST = timezone(timedelta(hours=+9), 'JST')
 
 # --- 1. データベース・価格設定 ---
 @st.cache_resource
@@ -141,7 +144,6 @@ if mode == "🛒 受付（レジ）":
                     unsafe_allow_html=True
                 )
                 
-                # 半分ずつの幅で下に配置
                 col_minus, col_plus = st.columns(2)
                 with col_minus:
                     if st.button("➖", key=f"minus_{item}", use_container_width=True):
@@ -174,7 +176,7 @@ if mode == "🛒 受付（レジ）":
                     new_order = {
                         "uid": uid,
                         "display_id": display_id,
-                        "time": datetime.now().strftime("%H:%M:%S"),
+                        "time": datetime.now(JST).strftime("%H:%M:%S"), # 日本時間で記録
                         "items": cart_items.copy(),
                         "total_amount": total_amount, 
                         "status": "調理待ち", 
@@ -216,11 +218,9 @@ if mode == "🛒 受付（レジ）":
                         st.write("▼数量を変更して「訂正を送信」を押してください")
                         for item in MENU:
                             current_val = st.session_state[edit_key].get(item, 0)
-                            # チェックボックスで商品を追加するか、既に1個以上ある場合
                             if current_val > 0 or st.checkbox(f"{item} を追加", key=f"chk_{order['uid']}_{item}"):
                                 st.markdown(f"**{item}** : {current_val} 個")
                                 
-                                # 訂正画面でも下に「➖」「➕」を配置するスタイルに変更
                                 c1, c2 = st.columns(2)
                                 with c1:
                                     if st.button("➖", key=f"edit_minus_{order['uid']}_{item}", use_container_width=True):
