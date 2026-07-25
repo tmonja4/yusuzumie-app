@@ -15,12 +15,28 @@ db = get_database()
 
 st.set_page_config(page_title="模擬店オーダーシステム", page_icon="🍔", layout="wide")
 
-# --- 全体のデザイン調整（上に詰める） ---
+# --- 全体のデザイン調整 ---
 st.markdown("""
     <style>
         .block-container {
             padding-top: 1.5rem;
             padding-bottom: 2rem;
+        }
+        
+        /* ======== ボタンの文字をスマホの枠いっぱいに大きくする ======== */
+        div[data-testid="stButton"] button {
+            height: auto !important;
+            min-height: 3.5rem !important; /* タップしやすい縦幅を確保 */
+            padding: 0.5rem !important;
+        }
+        
+        div[data-testid="stButton"] button p {
+            font-size: 1.15rem !important; /* 文字サイズを少し大きく */
+            font-weight: 600 !important;   /* 太字で見やすく */
+            white-space: normal !important; /* 文字が長い場合は枠内で自動で改行させる */
+            word-break: keep-all !important; /* 単語の途中で不自然に改行されないようにする */
+            line-height: 1.3 !important;
+            margin: 0 !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -100,7 +116,6 @@ if mode == "🛒 受付（レジ）":
                     db["order_count"] += 1
                     
                     uid = db["order_count"]
-                    # 注文番号を30でループさせる処理に変更
                     display_id = uid % 30
                     if display_id == 0:
                         display_id = 30
@@ -287,7 +302,6 @@ elif mode == "🍳 調理場（キッチン）":
         # カテゴリ分けをせず、全体を2列で一覧表示する
         col1, col2 = st.columns(2)
         for i, item in enumerate(MENU):
-            # 表示用に「【ドリンク】」などのカテゴリ表記を削除してスッキリさせる
             display_name = item
             if "】" in item:
                 emoji = item.split("【")[0]
